@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+
+# Environments (Poetry & Venv)
+.venv/
+venv/
+ENV/
+env/
+dist/
+build/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+wandb/
+
+# Secrets
+.env
+auth.json
