@@ -28,11 +28,6 @@ jobs:
           ECR_REPOSITORY: aws-edge-app # Назва твого репозиторію в ECR
           IMAGE_TAG: latest
         run: |
-          # Генеруємо requirements.txt для Docker (якщо використовуєш poetry)
-          pip install poetry
-          poetry self add poetry-plugin-export
-          poetry export -f requirements.txt --output requirements.txt
-
           # Білд та пуш
           docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
