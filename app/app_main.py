@@ -8,18 +8,8 @@ from PIL import Image
 from mangum import Mangum
 from contextlib import asynccontextmanager
 
-
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    wandb.init(
-        project="aws-edge-ml",
-        entity="vpleshko-none",
-        job_type="inference")
-    yield
-    wandb.finish()
-
-app = FastAPI(lifespan=lifespan)
-handler = Mangum(app, lifespan="off")
+app = FastAPI()
+handler = Mangum(app)
 
 # завантаження моделі один раз
 try:
@@ -28,6 +18,23 @@ try:
 except Exception as e:
     print(f"Erorr loading ONNX model: {e}")
     ort_session = None
+
+_wandb_initialized = False
+
+
+def ensure_wandb_initialized():
+    """Ледача ініціалізація - викликається лише при першому запиті"""
+    global _wandb_initialized
+    if not _wandb_initialized:
+        wandb.init(
+            project="aws-edge-ml",
+            entity="vpleshko-none",
+            job_type="inference",
+            # режима offline усуваєм таймаут під час ініту, дані синхраться у фоні
+            settings=wandb.Settings(mode="online"),
+            reinit=True
+        )
+        _wandb_initialized = True
 
 
 def preprocess_image(image_bytes):
@@ -45,6 +52,9 @@ async def predict(file: UploadFile = File(...)):
     if ort_session is None:
         raise HTTPException(status_code=500, detail="Model not loaded")
 
+    # 1. Init wandb
+    ensure_wandb_initialized()
+
     start_time = time.time()
     image_bytes = await file.read()
     input_tensor = preprocess_image(image_bytes)
@@ -53,7 +63,6 @@ async def predict(file: UploadFile = File(...)):
     outputs = ort_session.run(None, {input_name: input_tensor})
     predictes_class = int(np.argmax(outputs[0]))
     confidence = float(np.max(outputs[0]))
-
     latency_ms = (time.time() - start_time) * 1000
 
     # 3. Логування в W&B
