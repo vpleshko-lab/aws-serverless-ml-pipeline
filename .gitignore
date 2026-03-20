@@ -19,7 +19,10 @@ build/
 # OS
 .DS_Store
 Thumbs.db
+
+# dirs
 wandb/
+tests/data/
 
 # Secrets
 .env
