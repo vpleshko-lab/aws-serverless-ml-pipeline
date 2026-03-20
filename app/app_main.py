@@ -41,7 +41,13 @@ def preprocess_image(image_bytes):
     try:
         img = Image.open(io.BytesIO(image_bytes)).convert('RGB')
         img = img.resize((224, 224))
+
         img_data = np.array(img).transpose(2, 0, 1).astype('float32') / 255.0
+
+        mean = np.array([0.485, 0.456, 0.406]).reshape(3, 1, 1)
+        std = np.array([0.229, 0.224, 0.225]).reshape(3, 1, 1)
+        img_data = (img_data - mean) / std
+
         return np.expand_dims(img_data, axis=0)
     except Exception:
         raise HTTPException(status_code=400, detail="Invalid image")
@@ -61,8 +67,13 @@ async def predict(file: UploadFile = File(...)):
 
     # 2. інференс та метадані
     outputs = ort_session.run(None, {input_name: input_tensor})
-    predictes_class = int(np.argmax(outputs[0]))
-    confidence = float(np.max(outputs[0]))
+    # soft max
+    logits = outputs[0][0]
+    exp_logits = np.exp(logits - np.max(logits))
+    probabilities = exp_logits / exp_logits.sum()
+
+    predictes_class = int(np.argmax(probabilities))
+    confidence = float(np.max(probabilities))
     latency_ms = (time.time() - start_time) * 1000
 
     # 3. Логування в W&B
