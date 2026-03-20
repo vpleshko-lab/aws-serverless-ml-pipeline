@@ -2,7 +2,7 @@ name: Deploy ML App to AWS Lambda
 
 on:
   push:
-    branches: [ main ] # Пайплайн спрацює при пуші в гілку main
+    branches: [main] # Пайплайн спрацює при пуші в гілку main
 
 jobs:
   deploy:
@@ -30,6 +30,7 @@ jobs:
         run: |
           # Генеруємо requirements.txt для Docker (якщо використовуєш poetry)
           pip install poetry
+          poetry self add poetry-plugin-export
           poetry export -f requirements.txt --output requirements.txt
 
           # Білд та пуш
