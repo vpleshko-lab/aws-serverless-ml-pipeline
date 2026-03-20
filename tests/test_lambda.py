@@ -9,6 +9,9 @@ IMAGE_TEST_FOLDER = "tests/data/*.jpeg"
 # acces to all files
 images = glob.glob(IMAGE_TEST_FOLDER)
 
+if not images:
+    raise FileNotFoundError(f"Images not found in f: {IMAGE_TEST_FOLDER}")
+
 
 @pytest.mark.parametrize("image_path", images)
 def test_inference(image_path):
@@ -21,5 +24,6 @@ def test_inference(image_path):
     assert response.status_code == 200, f"Error {response.status_code}: {response.text}"
 
     result = response.json()
-    assert "class_id" in result or "confidence" in result or "latency_ms" in result
+    assert "class_id" in result and "confidence" in result and "latency_ms" in result
+    assert result["latency_ms"] > 0
     print(f"Result for {os.path.basename(image_path)}: {result}")
