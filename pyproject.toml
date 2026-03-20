@@ -21,7 +21,8 @@ dependencies = [
     "mangum (>=0.21.0,<0.22.0)",
     "wandb (>=0.25.1,<0.26.0)",
     "pillow (>=12.1.1,<13.0.0)",
-    "python-multipart (>=0.0.22,<0.0.23)"
+    "python-multipart (>=0.0.22,<0.0.23)",
+    "pytest (>=9.0.2,<10.0.0)"
 ]
 
 [tool.poetry]
