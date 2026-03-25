@@ -50,7 +50,7 @@ W&B Dashboard (Latency · Confidence · Images)
 | **API** | FastAPI, Mangum |
 | **Cloud** | AWS Lambda, ECR, API Gateway |
 | **DevOps** | Docker, GitHub Actions |
-| **Logging & tracking experiments** | Weights & Biases (W&B) |
+| **Logging & tracking metrics** | Weights & Biases (W&B) |
 | **Dependencies** | Poetry |
 
 ---
