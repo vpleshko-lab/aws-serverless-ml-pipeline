@@ -1,6 +1,7 @@
+import os
 import requests
 
-URL = "https://hph4sxhs7mk65c65o4klg6wpo40qdgbv.lambda-url.eu-central-1.on.aws/predict"
+URL = os.getenv("ML_API_URL", "https://hph4sxhs7mk65c65o4klg6wpo40qdgbv.lambda-url.eu-central-1.on.aws/predict")
 
 IMAGE_PATH = "tests/data/1QT8RpgN4CwDYU20PSep6Ig.jpeg"
 
