@@ -2,7 +2,7 @@ name: Deploy ML App to AWS Lambda
 
 on:
   push:
-    branches: [main] # Пайплайн спрацює при пуші в гілку main
+    branches: [main]
 
 jobs:
   deploy:
@@ -25,7 +25,7 @@ jobs:
       - name: Build, tag, and push image to Amazon ECR
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          ECR_REPOSITORY: aws-edge-app # Назва твого репозиторію в ECR
+          ECR_REPOSITORY: aws-edge-app
           IMAGE_TAG: latest
         run: |
           # Білд та пуш
