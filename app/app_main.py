@@ -82,9 +82,12 @@ async def predict(file: UploadFile = File(...)):
     wandb.log({
         "prediction": predictes_class,
         "confidence": confidence,
-        "latence_ms": latency_ms,
+        "latency_ms": latency_ms,
         "image": wandb.Image(Image.open(io.BytesIO(image_bytes)))
     })
+    wandb.finish()
+    global _wandb_initialized
+    _wandb_initialized = False
 
     return {
         "class_id": predictes_class,
