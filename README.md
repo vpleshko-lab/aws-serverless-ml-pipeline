@@ -15,7 +15,6 @@ End-to-end inference pipeline for MobileNetV2, deployed on AWS Lambda via Docker
 - [Architecture](#architecture)
 - [Tech Stack](#tech-stack)
 - [Project Structure](#project-structure)
-- [Monitoring & Observability](#monitoring--observability)
 - [API Reference](#api-reference)
 - [Local Development](#local-development)
 - [Cloud Deployment](#cloud-deployment--replication-guide)
@@ -51,7 +50,7 @@ W&B Dashboard (Latency · Confidence · Images)
 | **API** | FastAPI, Mangum |
 | **Cloud** | AWS Lambda, ECR, API Gateway |
 | **DevOps** | Docker, GitHub Actions |
-| **Monitoring** | Weights & Biases (W&B) |
+| **Logging & tracking experiments** | Weights & Biases (W&B) |
 | **Dependencies** | Poetry |
 
 ---
@@ -75,18 +74,6 @@ W&B Dashboard (Latency · Confidence · Images)
 ├── .env.example
 └── README.md
 ```
-
----
-
-## Monitoring & Observability
-
-Every inference request is logged to W&B, enabling:
-
-| Signal | What it detects |
-|---|---|
-| **Confidence distribution** | Model drift over time |
-| **Inference latency** | Performance regressions after deploys |
-| **Input images** | Data quality issues; feeds Active Learning loop |
 
 ---
 
