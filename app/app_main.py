@@ -1,15 +1,21 @@
 import io
 import time
+import json
+import uuid
+import boto3
 import numpy as np
 import onnxruntime as ort
-import wandb
 from fastapi import FastAPI, File, UploadFile, HTTPException
 from PIL import Image
 from mangum import Mangum
-from contextlib import asynccontextmanager
+from datetime import datetime
 
 app = FastAPI()
 handler = Mangum(app)
+
+# S3 Client - ініт один раз при старті контейнера
+s3 = boto3.client('s3')
+LOGS_BUCKET = "aws-edgle-ml-logs"
 
 # завантаження моделі один раз
 try:
@@ -18,24 +24,6 @@ try:
 except Exception as e:
     print(f"Erorr loading ONNX model: {e}")
     ort_session = None
-
-_wandb_initialized = False
-
-
-def ensure_wandb_initialized():
-    """Ледача ініціалізація - викликається лише при першому запиті"""
-    global _wandb_initialized
-    if not _wandb_initialized:
-        wandb.init(
-            project="aws-edge-ml",
-            entity="vpleshko-none",
-            job_type="inference",
-            # режима offline усуваєм таймаут під час ініту, дані синхраться у фоні
-            settings=wandb.Settings(mode="online"),
-            reinit=True
-        )
-        _wandb_initialized = True
-
 
 def preprocess_image(image_bytes):
     try:
@@ -55,13 +43,39 @@ def preprocess_image(image_bytes):
         raise HTTPException(status_code=400, detail="Invalid image")
 
 
+def log_to_s3(image_bytes: bytes, predicted_class: int, confidence: float, latency_ms: float):
+    """Збереження зображень + метаданів в S3 для Data flywheel"""
+    log_id = str(uuid.uuid4())
+
+    # зображення
+    s3.put_object(
+        Bucket=LOGS_BUCKET,
+        Key=f"images/{log_id}.jpg",
+        Body=image_bytes,
+        ContentType="image/jpeg"
+    )
+
+    # метадані окремо задля легкого читання без завантаження зобрж
+    s3.put_object(
+        Bucket=LOGS_BUCKET,
+        Key=f"metadata/{log_id}.json",
+        Body=json.dumps({
+            "id": log_id,
+            "predicted_class": predicted_class,
+            "confidence": confidence,
+            "latency_ms": latency_ms,
+            "timestamp": datetime.utcnow().isoformat(),
+            "image_key": f"images/{log_id}.jpg"
+        }),
+        ContentType="application/json"
+    )
+
+    return log_id
+
 @app.post("/predict")
 async def predict(file: UploadFile = File(...)):
     if ort_session is None:
         raise HTTPException(status_code=500, detail="Model not loaded")
-
-    # 1. Init wandb
-    ensure_wandb_initialized()
 
     start_time = time.time()
     image_bytes = await file.read()
@@ -78,19 +92,12 @@ async def predict(file: UploadFile = File(...)):
     confidence = float(np.max(probabilities))
     latency_ms = (time.time() - start_time) * 1000
 
-    # 3. Логування в W&B
-    wandb.log({
-        "prediction": predictes_class,
-        "confidence": confidence,
-        "latency_ms": latency_ms,
-        "image": wandb.Image(Image.open(io.BytesIO(image_bytes)))
-    })
-    wandb.finish()
-    global _wandb_initialized
-    _wandb_initialized = False
+    # 3. Логування в S3
+    log_id = log_to_s3(image_bytes, predictes_class, confidence, latency_ms)
 
     return {
         "class_id": predictes_class,
         "confidence": round(confidence, 4),
-        "latency_ms": round(latency_ms, 2)
+        "latency_ms": round(latency_ms, 2),
+        "log_id": log_id
     }
