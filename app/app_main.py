@@ -10,7 +10,7 @@ from PIL import Image
 from mangum import Mangum
 from datetime import datetime
 import logging
-from logger_setup import setup_app_logging
+from .logger_setup import setup_app_logging
 
 # Logger
 setup_app_logging()
