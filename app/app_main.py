@@ -9,21 +9,29 @@ from fastapi import FastAPI, File, UploadFile, HTTPException
 from PIL import Image
 from mangum import Mangum
 from datetime import datetime
+import logging
+from logger_setup import setup_app_logging
+
+# Logger
+setup_app_logging()
+logger = logging.getLogger(__name__)
 
 app = FastAPI()
 handler = Mangum(app)
 
 # S3 Client - ініт один раз при старті контейнера
 s3 = boto3.client('s3')
-LOGS_BUCKET = "aws-edgle-ml-logs"
+LOGS_BUCKET = "aws-ml-logs"
 
 # завантаження моделі один раз
 try:
     ort_session = ort.InferenceSession("app/model.onnx")
     input_name = ort_session.get_inputs()[0].name
+    logger.info("Model ONNX is succesfull load")
 except Exception as e:
-    print(f"Erorr loading ONNX model: {e}")
+    logger.error(f"Error while loading model: {e}")
     ort_session = None
+
 
 def preprocess_image(image_bytes):
     try:
@@ -71,6 +79,7 @@ def log_to_s3(image_bytes: bytes, predicted_class: int, confidence: float, laten
     )
 
     return log_id
+
 
 @app.post("/predict")
 async def predict(file: UploadFile = File(...)):
