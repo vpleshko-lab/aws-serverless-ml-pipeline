@@ -856,6 +856,17 @@ files = [
 ]
 
 [[package]]
+name = "logging"
+version = "0.4.9.6"
+description = "A logging module for Python"
+optional = false
+python-versions = "*"
+groups = ["main"]
+files = [
+    {file = "logging-0.4.9.6.tar.gz", hash = "sha256:26f6b50773f085042d301085bd1bf5d9f3735704db9f37c1ce6d8b85c38f2417"},
+]
+
+[[package]]
 name = "mangum"
 version = "0.21.0"
 description = "AWS Lambda support for ASGI applications"
@@ -2824,4 +2835,4 @@ workspaces = ["wandb-workspaces"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.11,<3.15"
-content-hash = "312a27f9513fcba0d245f88bbfffb3cdeacf115a39cf3cde9ae2fa27b4c8bc7c"
+content-hash = "8c12f4566755e8e9f8d7285e194424e665810338dc1b015a89857cb357cf36cb"
