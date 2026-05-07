@@ -27,6 +27,10 @@ cloudwatch = boto3.client('cloudwatch')
 # Configuration
 LOGS_BUCKET = "aws-ml-logs"
 MODEL_VERSION = "v1.0.0"
+DIMENSIONS = [
+    {'Name': 'Model', 'Value': MODEL_VERSION},
+    {'Name': 'Project', 'Value': 'CloudPipeline'}
+]
 
 # завантаження моделі один раз
 try:
@@ -111,15 +115,13 @@ async def predict(file: UploadFile = File(...)):
                     "MetricName": "InferenceConfidence",
                     "Value": confidence,
                     "Unit": 'None',
-                    "Dimensions": [{
-                        "Name": "Model",
-                        "Value": MODEL_VERSION
-                    }]
+                    "Dimensions": DIMENSIONS
                 },
                 {
                     "MetricName": "Latency",
                     "Value": latency_ms,
-                    "Unit": "Milliseconds"
+                    "Unit": "Milliseconds",
+                    "Dimensions": DIMENSIONS
                 }
             ]
         )
