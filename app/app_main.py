@@ -19,9 +19,14 @@ logger = logging.getLogger(__name__)
 app = FastAPI()
 handler = Mangum(app)
 
-# S3 Client - ініт один раз при старті контейнера
+# S3 Client
 s3 = boto3.client('s3')
+dynamodb = boto3.resource('dynamodb').Table("InferenceLogs")
+cloudwatch = boto3.client('cloudwatch')
+
+# Configuration
 LOGS_BUCKET = "aws-ml-logs"
+MODEL_VERSION = "v1.0.0"
 
 # завантаження моделі один раз
 try:
@@ -50,63 +55,79 @@ def preprocess_image(image_bytes):
     except Exception:
         raise HTTPException(status_code=400, detail="Invalid image")
 
-
-def log_to_s3(image_bytes: bytes, predicted_class: int, confidence: float, latency_ms: float):
-    """Збереження зображень + метаданів в S3 для Data flywheel"""
-    log_id = str(uuid.uuid4())
-
-    # зображення
-    s3.put_object(
-        Bucket=LOGS_BUCKET,
-        Key=f"images/{log_id}.jpg",
-        Body=image_bytes,
-        ContentType="image/jpeg"
-    )
-
-    # метадані окремо задля легкого читання без завантаження зобрж
-    s3.put_object(
-        Bucket=LOGS_BUCKET,
-        Key=f"metadata/{log_id}.json",
-        Body=json.dumps({
-            "id": log_id,
-            "predicted_class": predicted_class,
-            "confidence": confidence,
-            "latency_ms": latency_ms,
-            "timestamp": datetime.utcnow().isoformat(),
-            "image_key": f"images/{log_id}.jpg"
-        }),
-        ContentType="application/json"
-    )
-
-    return log_id
-
-
 @app.post("/predict")
 async def predict(file: UploadFile = File(...)):
     if ort_session is None:
-        raise HTTPException(status_code=500, detail="Model not loaded")
+        raise HTTPException(status_code=500, detail="Inference engine offline")
 
     start_time = time.time()
     image_bytes = await file.read()
-    input_tensor = preprocess_image(image_bytes)
 
-    # 2. інференс та метадані
+    # 1. Inference
+    input_tensor = preprocess_image(image_bytes)
     outputs = ort_session.run(None, {input_name: input_tensor})
-    # soft max
+
+    # 1.1 Soft max для отримання ймовірностей
     logits = outputs[0][0]
     exp_logits = np.exp(logits - np.max(logits))
     probabilities = exp_logits / exp_logits.sum()
-
+    # 1.2 Метадані предікту
     predictes_class = int(np.argmax(probabilities))
     confidence = float(np.max(probabilities))
     latency_ms = (time.time() - start_time) * 1000
 
-    # 3. Логування в S3
-    log_id = log_to_s3(image_bytes, predictes_class, confidence, latency_ms)
+    # 2. Логування
+    log_id = str(uuid.uuid4())
+    timestamp = datetime.utcnow().isoformat()
+    s3_key = f"inferences/{datetime.now().strftime('%Y/%m/%d')}/{log_id}.jpg"
+
+    try:
+        # Збереження image to S3
+        s3.put_object(Bucket=LOGS_BUCKET, Key=s3_key,
+                      Body=image_bytes, ContentType="image/jpeg")
+
+        # Write metadata to DynamoDB
+        dynamodb.put_item(
+            Item={
+                'prediction_id': log_id,
+                'timestap': timestamp,
+                'predicted_class': predictes_class,
+                'confidence': str(round(confidence, 4)),
+                'latency_ms': str(round(latency_ms, 2)),
+                's3_path': s3_key,
+                'model_version': MODEL_VERSION,
+                'is_labeled': False,
+                'project': 'Cloud_Pipeline'
+
+            }
+        )
+
+        # Відправка метрики в CloudWatch
+        cloudwatch.put_metric_data(
+            Namespace="ML_Production",
+            MetricData=[
+                {
+                    "MetricName": "InferenceConfidence",
+                    "Value": confidence,
+                    "Unit": 'None',
+                    "Dimensions": [{
+                        "Name": "Model",
+                        "Value": MODEL_VERSION
+                    }]
+                },
+                {
+                    "MetricName": "Latency",
+                    "Value": latency_ms,
+                    "Unit": "Milliseconds"
+                }
+            ]
+        )
+    except Exception as e:
+        logger.error(f"Logging failed: {e}")
 
     return {
-        "class_id": predictes_class,
+        "log_id": log_id,
+        "class": predictes_class,
         "confidence": round(confidence, 4),
-        "latency_ms": round(latency_ms, 2),
-        "log_id": log_id
+        "status": "logged"
     }
