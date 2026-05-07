@@ -55,6 +55,7 @@ def preprocess_image(image_bytes):
     except Exception:
         raise HTTPException(status_code=400, detail="Invalid image")
 
+
 @app.post("/predict")
 async def predict(file: UploadFile = File(...)):
     if ort_session is None:
@@ -90,7 +91,7 @@ async def predict(file: UploadFile = File(...)):
         dynamodb.put_item(
             Item={
                 'prediction_id': log_id,
-                'timestap': timestamp,
+                'timestamp': timestamp,
                 'predicted_class': predictes_class,
                 'confidence': str(round(confidence, 4)),
                 'latency_ms': str(round(latency_ms, 2)),
