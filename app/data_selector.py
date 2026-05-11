@@ -9,8 +9,7 @@ def handler(event, context):
     # логіка вибору
     response = dynamodb.query(
         IndexName="ActiveLearningIndex",
-        KeyConditionExpression=Key('is_labeled').eq('False'),
-        FilterExpression=Attr('confidence').between('0.0', '0.6'),
+        KeyConditionExpression=Key('is_labeled').eq('False') & Key('confidence').between('0.0', '0.6'),
         Limit=20
     )
 
