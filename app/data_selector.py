@@ -5,8 +5,7 @@ import os
 dynamodb = boto3.resource('dynamodb').Table("InferenceLogs")
 s3 = boto3.client('s3')
 
-def handler(event, context,
-            min_conf, max_conf):
+def handler(event, context):
     # логіка вибору
     response = dynamodb.query(
         IndexName="ActiveLearningIndex",
