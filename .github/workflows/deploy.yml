@@ -37,3 +37,9 @@ jobs:
           aws lambda update-function-code \
             --function-name ml-edge-inference \
             --image-uri ${{ steps.login-ecr.outputs.registry }}/aws-edge-app:latest
+
+      - name: Update Selector Lambda
+        run: |
+          aws lambda update-function-code \
+            --function-name ml-data-selector \
+            --image-uri ${{ steps.login-ecr.outputs.registry }}/aws-edge-app:latest
