@@ -1,4 +1,4 @@
-# Serverless Edge-to-Cloud ML Pipeline (Computer Vision)
+# Serverless Cloud ML Pipeline (Computer Vision)
 
 ![CI/CD](https://img.shields.io/github/actions/workflow/status/vpleshko-lab/aws-edge-ml/deploy.yml?branch=main&label=CI%2FCD&logo=github-actions)
 ![Python](https://img.shields.io/badge/Python-3.12-blue?logo=python)
