@@ -77,14 +77,17 @@ async def predict(file: UploadFile = File(...)):
     exp_logits = np.exp(logits - np.max(logits))
     probabilities = exp_logits / exp_logits.sum()
     # 1.2 Метадані предікту
-    predictes_class = int(np.argmax(probabilities))
+    predicted_class = int(np.argmax(probabilities))
     confidence = float(np.max(probabilities))
     latency_ms = (time.time() - start_time) * 1000
 
     # 2. Логування
     log_id = str(uuid.uuid4())
-    timestamp = datetime.utcnow().isoformat()
-    s3_key = f"inferences/{datetime.now().strftime('%Y/%m/%d')}/{log_id}.jpg"
+    now = datetime.utcnow()
+    timestamp = now.isoformat() + "Z"
+    s3_key = f"inferences/{now.strftime('%Y/%m/%d')}/{log_id}.jpg"
+    log_status = "logged"
+    logging_error = None
 
     try:
         # Збереження image to S3
@@ -96,14 +99,13 @@ async def predict(file: UploadFile = File(...)):
             Item={
                 'prediction_id': log_id,
                 'timestamp': timestamp,
-                'predicted_class': predictes_class,
+                'predicted_class': predicted_class,
                 'confidence': str(round(confidence, 4)),
                 'latency_ms': str(round(latency_ms, 2)),
                 's3_path': s3_key,
                 'model_version': MODEL_VERSION,
                 'is_labeled': str(False),
                 'project': 'Cloud_Pipeline'
-
             }
         )
 
@@ -127,10 +129,16 @@ async def predict(file: UploadFile = File(...)):
         )
     except Exception as e:
         logger.error(f"Logging failed: {e}")
+        log_status = "logging_failed"
+        logging_error = str(e)
 
-    return {
+    response = {
         "log_id": log_id,
-        "class": predictes_class,
+        "class": predicted_class,
         "confidence": round(confidence, 4),
-        "status": "logged"
+        "status": log_status
     }
+    if logging_error:
+        response["error"] = logging_error
+
+    return response
