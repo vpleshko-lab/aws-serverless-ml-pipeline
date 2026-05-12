@@ -51,7 +51,7 @@ AWS Lambda (Data Selector)
 | **Model** | MobileNetV2 (ImageNet pre-trained) |
 | **API Framework** | FastAPI, Mangum (Lambda adapter) |
 | **Cloud Services** | AWS Lambda, API Gateway, S3, DynamoDB, CloudWatch |
-| **Monitoring** | Weights & Biases |
+| **Tracking Experiments** | MlFlow (*not released*) |
 | **Container** | Docker |
 | **CI/CD** | GitHub Actions |
 
