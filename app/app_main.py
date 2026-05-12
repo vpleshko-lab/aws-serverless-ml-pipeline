@@ -100,7 +100,7 @@ async def predict(file: UploadFile = File(...)):
                 'prediction_id': log_id,
                 'timestamp': timestamp,
                 'predicted_class': predicted_class,
-                'confidence': str(round(confidence, 4)),
+                'confidence': str(round(confidence, 4)), 
                 'latency_ms': str(round(latency_ms, 2)),
                 's3_path': s3_key,
                 'model_version': MODEL_VERSION,
