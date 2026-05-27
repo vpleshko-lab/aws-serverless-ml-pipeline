@@ -1,0 +1,373 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+
+Description: |
+  Serverless ML Inference Pipeline Infrastructure
+  - Lambda functions for inference and active learning
+  - API Gateway for HTTP endpoints
+  - S3 for image storage and logging
+  - DynamoDB for inference metadata
+  - CloudWatch for monitoring and metrics
+  - IAM roles for secure access
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: "Application Configuration"
+        Parameters:
+          - EnvironmentName
+          - ModelVersion
+      - Label:
+          default: "AWS Resources"
+        Parameters:
+          - LogsBucket
+          - LabelingQueueBucket
+          - InferenceLogsTable
+
+Parameters:
+  EnvironmentName:
+    Type: String
+    Default: dev
+    AllowedValues: [dev, staging, prod]
+    Description: Environment name for resource naming
+
+  ModelVersion:
+    Type: String
+    Default: v1.0.0
+    Description: ML model version identifier
+
+  LogsBucket:
+    Type: String
+    Default: aws-ml-logs
+    Description: S3 bucket for storing inference logs and images
+
+  LabelingQueueBucket:
+    Type: String
+    Default: aws-labeling-queue
+    Description: S3 bucket for active learning samples
+
+  InferenceLogsTable:
+    Type: String
+    Default: InferenceLogs
+    Description: DynamoDB table for inference metadata
+
+Globals:
+  Function:
+    Runtime: python3.12
+    Timeout: 60
+    MemorySize: 512
+    Environment:
+      Variables:
+        LOGS_BUCKET: !Ref LogsBucket
+        LABELING_QUEUE_BUCKET: !Ref LabelingQueueBucket
+        INFERENCE_LOGS_TABLE: !Ref InferenceLogsTable
+        MODEL_VERSION: !Ref ModelVersion
+        ENVIRONMENT_NAME: !Ref EnvironmentName
+
+Resources:
+  # ==================== IAM ROLES ====================
+  InferenceLambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: InferencePolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:PutObject
+                  - s3:GetObject
+                Resource:
+                  - !Sub 'arn:aws:s3:::${LogsBucket}/*'
+              - Effect: Allow
+                Action:
+                  - dynamodb:PutItem
+                  - dynamodb:Query
+                Resource: !GetAtt InferenceLogsTable.Arn
+              - Effect: Allow
+                Action:
+                  - cloudwatch:PutMetricData
+                Resource: '*'
+
+  DataSelectorLambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: DataSelectorPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:Query
+                  - dynamodb:UpdateItem
+                Resource: !GetAtt InferenceLogsTable.Arn
+              - Effect: Allow
+                Action:
+                  - s3:CopyObject
+                  - s3:GetObject
+                Resource:
+                  - !Sub 'arn:aws:s3:::${LogsBucket}/*'
+              - Effect: Allow
+                Action:
+                  - s3:PutObject
+                Resource:
+                  - !Sub 'arn:aws:s3:::${LabelingQueueBucket}/*'
+
+  MLFlowLambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: MLFlowPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:PutObject
+                Resource:
+                  - !Sub 'arn:aws:s3:::${LogsBucket}/mlflow/*'
+
+  # ==================== STORAGE ====================
+  LogsBucketResource:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub '${LogsBucket}-${AWS::AccountId}'
+      VersioningConfiguration:
+        Status: Enabled
+      LifecycleConfiguration:
+        Rules:
+          - Id: DeleteOldLogs
+            Status: Enabled
+            ExpirationInDays: 90
+            NoncurrentVersionExpirationInDays: 30
+
+  LabelingQueueBucketResource:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub '${LabelingQueueBucket}-${AWS::AccountId}'
+      VersioningConfiguration:
+        Status: Enabled
+
+  # ==================== DYNAMODB ====================
+  InferenceLogsTableResource:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Ref InferenceLogsTable
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: prediction_id
+          AttributeType: S
+        - AttributeName: timestamp
+          AttributeType: S
+        - AttributeName: is_labeled
+          AttributeType: S
+        - AttributeName: confidence
+          AttributeType: S
+      KeySchema:
+        - AttributeName: prediction_id
+          KeyType: HASH
+        - AttributeName: timestamp
+          KeyType: RANGE
+      GlobalSecondaryIndexes:
+        - IndexName: ActiveLearningIndex
+          KeySchema:
+            - AttributeName: is_labeled
+              KeyType: HASH
+            - AttributeName: confidence
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+      TTL:
+        AttributeName: expiration_time
+        Enabled: true
+
+  # ==================== LAMBDA: INFERENCE ====================
+  InferenceLambdaFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub 'ml-edge-inference-${EnvironmentName}'
+      CodeUri: ../
+      Handler: app.app_main.handler
+      Role: !GetAtt InferenceLambdaExecutionRole.Arn
+      Timeout: 60
+      MemorySize: 1024
+      Environment:
+        Variables:
+          LOGS_BUCKET: !Sub '${LogsBucket}-${AWS::AccountId}'
+          LABELING_QUEUE_BUCKET: !Sub '${LabelingQueueBucket}-${AWS::AccountId}'
+      Events:
+        ApiEvent:
+          Type: Api
+          Properties:
+            RestApiId: !Ref InferenceApi
+            Path: /predict
+            Method: POST
+
+  # ==================== LAMBDA: DATA SELECTOR ====================
+  DataSelectorLambdaFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub 'ml-data-selector-${EnvironmentName}'
+      CodeUri: ../app/data_selector.py
+      Handler: data_selector.lambda_handler
+      Role: !GetAtt DataSelectorLambdaExecutionRole.Arn
+      Timeout: 300
+      MemorySize: 512
+      Events:
+        ScheduledEvent:
+          Type: Schedule
+          Properties:
+            Schedule: 'rate(1 hour)'
+
+  # ==================== LAMBDA: MLFLOW TRACKING ====================
+  MLFlowTrackingLambdaFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub 'ml-tracking-${EnvironmentName}'
+      CodeUri: ../infrastructure/mlflow_lambda.py
+      Handler: mlflow_lambda.lambda_handler
+      Role: !GetAtt MLFlowLambdaExecutionRole.Arn
+      Timeout: 60
+      MemorySize: 256
+      Environment:
+        Variables:
+          MLFLOW_BACKEND_STORE_URI: !Sub 's3://${LogsBucket}-${AWS::AccountId}/mlflow'
+          MLFLOW_DEFAULT_ARTIFACT_ROOT: !Sub 's3://${LogsBucket}-${AWS::AccountId}/mlflow-artifacts'
+      Events:
+        InferenceEvent:
+          Type: EventBridgeRule
+          Properties:
+            Pattern:
+              source: [aws.lambda]
+              detail-type: [function invocation]
+              detail:
+                function: [ml-edge-inference]
+
+  # ==================== API GATEWAY ====================
+  InferenceApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      Name: !Sub 'ml-inference-api-${EnvironmentName}'
+      StageName: !Ref EnvironmentName
+      TracingEnabled: true
+      MethodSettings:
+        - ResourcePath: '/*'
+          HttpMethod: '*'
+          LoggingLevel: INFO
+          DataTraceEnabled: true
+          MetricsEnabled: true
+          CloudWatchMetricsEnabled: true
+
+  # ==================== CLOUDWATCH ====================
+  MLProductionNamespace:
+    Type: AWS::CloudWatch::Dashboard
+    Properties:
+      DashboardName: !Sub 'ml-pipeline-${EnvironmentName}'
+      DashboardBody: !Sub |
+        {
+          "widgets": [
+            {
+              "type": "metric",
+              "properties": {
+                "metrics": [
+                  ["ML_Production", "InferenceConfidence", {"stat": "Average"}],
+                  [".", "Latency", {"stat": "Average"}]
+                ],
+                "period": 300,
+                "stat": "Average",
+                "region": "${AWS::Region}",
+                "title": "Model Performance"
+              }
+            },
+            {
+              "type": "metric",
+              "properties": {
+                "metrics": [
+                  ["AWS/Lambda", "Duration", {"stat": "Average", "dimensions": {"FunctionName": "${InferenceLambdaFunction}"}}],
+                  [".", "Errors", {"stat": "Sum"}],
+                  [".", "Invocations", {"stat": "Sum"}]
+                ],
+                "period": 300,
+                "stat": "Average",
+                "region": "${AWS::Region}",
+                "title": "Lambda Metrics"
+              }
+            },
+            {
+              "type": "metric",
+              "properties": {
+                "metrics": [
+                  ["AWS/DynamoDB", "ConsumedReadCapacityUnits", {"stat": "Sum", "dimensions": {"TableName": "${InferenceLogsTable}"}}],
+                  [".", "ConsumedWriteCapacityUnits", {"stat": "Sum"}]
+                ],
+                "period": 300,
+                "stat": "Sum",
+                "region": "${AWS::Region}",
+                "title": "DynamoDB Usage"
+              }
+            }
+          ]
+        }
+
+Outputs:
+  InferenceApiEndpoint:
+    Description: API Gateway endpoint for inference
+    Value: !Sub 'https://${InferenceApi}.execute-api.${AWS::Region}.amazonaws.com/${EnvironmentName}/predict'
+
+  InferenceLambdaFunctionArn:
+    Description: ARN of the inference Lambda function
+    Value: !GetAtt InferenceLambdaFunction.Arn
+
+  DataSelectorLambdaFunctionArn:
+    Description: ARN of the data selector Lambda function
+    Value: !GetAtt DataSelectorLambdaFunction.Arn
+
+  MLFlowTrackingLambdaFunctionArn:
+    Description: ARN of the MLFlow tracking Lambda function
+    Value: !GetAtt MLFlowTrackingLambdaFunction.Arn
+
+  LogsBucketName:
+    Description: S3 bucket for inference logs and images
+    Value: !Sub '${LogsBucket}-${AWS::AccountId}'
+
+  LabelingQueueBucketName:
+    Description: S3 bucket for active learning samples
+    Value: !Sub '${LabelingQueueBucket}-${AWS::AccountId}'
+
+  InferenceTableName:
+    Description: DynamoDB table for inference metadata
+    Value: !Ref InferenceLogsTableResource
+
+  CloudWatchDashboardUrl:
+    Description: URL to CloudWatch Dashboard
+    Value: !Sub 'https://console.aws.amazon.com/cloudwatch/home?region=${AWS::Region}#dashboards:name=ml-pipeline-${EnvironmentName}'

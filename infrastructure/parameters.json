@@ -1,0 +1,9 @@
+{
+  "ParameterOverrides": {
+    "EnvironmentName": "dev",
+    "ModelVersion": "v1.0.0",
+    "LogsBucket": "aws-ml-logs",
+    "LabelingQueueBucket": "aws-labeling-queue",
+    "InferenceLogsTable": "InferenceLogs"
+  }
+}
