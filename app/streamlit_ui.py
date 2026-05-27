@@ -80,18 +80,14 @@ confidence_threshold = st.sidebar.slider(
     "Confidence Threshold",
     min_value=0.0,
     max_value=1.0,
-    value=0.6,
+    value=0.3,
     step=0.05,
     help="Predictions below this confidence will be flagged for active learning"
 )
 
 # ==================== MAIN TITLE ====================
-col1, col2 = st.columns([0.1, 0.9])
-with col1:
-    st.markdown('<span class="title-emoji">🤖</span>', unsafe_allow_html=True)
-with col2:
-    st.title("ML Inference Pipeline")
-    st.caption(f"Backend: {backend} | Model: MobileNetV2 ONNX")
+st.title("ML Inference Pipeline")
+st.caption(f"Backend: {backend} | Model: MobileNetV2 ONNX")
 
 # ==================== INFORMATION TABS ====================
 tab_inference, tab_info, tab_help = st.tabs(
@@ -212,7 +208,10 @@ with tab_inference:
                                     st.metric(
                                         "Confidence",
                                         f"{confidence:.2%}",
-                                        delta=f"{'High' if confidence >= confidence_threshold else 'Low'}"
+                                        delta=f"{'High' if confidence >= confidence_threshold else 'Low'}",
+                                        delta_color="normal" if confidence >= confidence_threshold else 'inverse',
+                                        delta_arrow="up" if confidence >= confidence_threshold else "down"
+
                                     )
                                     st.metric(
                                         "Latency", f"{result.get('latency_ms', 0):.1f}ms")
@@ -265,7 +264,7 @@ with tab_inference:
                         "Please paste AWS API Gateway URL in the sidebar")
     else:
         # No image uploaded
-        st.info("👆 Upload an image to get started")
+        st.info("Upload an image to get started")
 
         # Sample images info
         with st.expander("Sample Images for Testing"):
