@@ -167,7 +167,7 @@ with tab_inference:
         with col1:
             st.markdown("#### Preview")
             image = Image.open(uploaded_file)
-            st.image(image, use_column_width=True)
+            st.image(image, use_column_width=True, caption="Uploaded Image")
 
             # Image info
             st.caption(f"""
