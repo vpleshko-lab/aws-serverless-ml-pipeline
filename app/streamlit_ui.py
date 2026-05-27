@@ -17,7 +17,6 @@ from datetime import datetime
 # Page configuration
 st.set_page_config(
     page_title="ML Inference Pipeline",
-    page_icon="🤖",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -49,7 +48,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ==================== SIDEBAR CONFIGURATION ====================
-st.sidebar.title("⚙️ Configuration")
+st.sidebar.title("Configuration")
 
 # API Endpoint selection
 api_mode = st.sidebar.radio(
@@ -76,7 +75,7 @@ else:
     backend = "AWS Lambda"
 
 # Image preprocessing options
-st.sidebar.title("📊 Preprocessing")
+st.sidebar.title("Preprocessing")
 confidence_threshold = st.sidebar.slider(
     "Confidence Threshold",
     min_value=0.0,
@@ -95,7 +94,8 @@ with col2:
     st.caption(f"Backend: {backend} | Model: MobileNetV2 ONNX")
 
 # ==================== INFORMATION TABS ====================
-tab_inference, tab_info, tab_help = st.tabs(["🎯 Inference", "📈 Info", "📚 Help"])
+tab_inference, tab_info, tab_help = st.tabs(
+    ["Inference", "Info", "Help"])
 
 with tab_info:
     col1, col2, col3 = st.columns(3)
@@ -151,7 +151,7 @@ with tab_help:
 
 # ==================== MAIN INFERENCE INTERFACE ====================
 with tab_inference:
-    st.markdown("### 📸 Image Upload")
+    st.markdown("### Image Upload")
 
     # Image upload
     uploaded_file = st.file_uploader(
@@ -167,7 +167,7 @@ with tab_inference:
         with col1:
             st.markdown("#### Preview")
             image = Image.open(uploaded_file)
-            st.image(image, use_column_width=True, caption="Uploaded Image")
+            st.image(image, width="stretch", caption="Uploaded Image")
 
             # Image info
             st.caption(f"""
@@ -180,82 +180,95 @@ with tab_inference:
             st.markdown("#### Prediction")
 
             if api_endpoint and (api_mode == "Local (FastAPI)" or api_endpoint.startswith("https://")):
-                if st.button("🚀 Run Inference", use_container_width=True):
+                if st.button("Run Inference", use_container_width=True):
                     with st.spinner("Processing image..."):
                         try:
                             # Prepare request
-                            files = {"file": (uploaded_file.name, uploaded_file, uploaded_file.type)}
+                            files = {
+                                "file": (uploaded_file.name, uploaded_file.getvalue(), uploaded_file.type)}
 
                             # Make request
-                            response = requests.post(api_endpoint, files=files, timeout=60)
+                            response = requests.post(
+                                api_endpoint, files=files, timeout=60)
 
                             if response.status_code == 200:
                                 result = response.json()
 
                                 # Display results
-                                st.markdown('<div class="success-card">', unsafe_allow_html=True)
-                                st.markdown("✅ **Inference Successful**")
+                                st.markdown(
+                                    '<div class="success-card">', unsafe_allow_html=True)
+                                st.markdown("**Inference Successful**")
                                 st.markdown('</div>', unsafe_allow_html=True)
 
                                 col_a, col_b = st.columns(2)
                                 with col_a:
-                                    st.metric("Predicted Class", result.get("class", "N/A"))
-                                    st.metric("Status", result.get("status", "N/A").replace("_", " ").title())
+                                    st.metric("Predicted Class",
+                                              result.get("class", "N/A"))
+                                    st.metric("Status", result.get(
+                                        "status", "N/A").replace("_", " ").title())
 
                                 with col_b:
                                     confidence = result.get("confidence", 0)
                                     st.metric(
                                         "Confidence",
                                         f"{confidence:.2%}",
-                                        delta=f"{'✓ High' if confidence >= confidence_threshold else '⚠ Low'}"
+                                        delta=f"{'High' if confidence >= confidence_threshold else 'Low'}"
                                     )
-                                    st.metric("Latency", f"{result.get('latency_ms', 0):.1f}ms")
+                                    st.metric(
+                                        "Latency", f"{result.get('latency_ms', 0):.1f}ms")
 
                                 # Active Learning Flag
                                 if confidence < confidence_threshold:
                                     st.warning(
-                                        f"🔍 **Low Confidence Alert**\n\n"
+                                        f"**Low Confidence Alert**\n\n"
                                         f"This prediction ({confidence:.2%}) is below the threshold ({confidence_threshold:.0%}) "
                                         f"and has been queued for human review (Active Learning)."
                                     )
 
                                 # Details
-                                with st.expander("📋 Full Response"):
+                                with st.expander("Full Response"):
                                     st.json(result)
 
                                 # Logging
-                                st.success(f"✓ Logged with ID: `{result.get('log_id', 'N/A')}`")
-                                st.caption(f"Timestamp: {datetime.now().isoformat()}")
+                                st.success(
+                                    f"✓ Logged with ID: `{result.get('log_id', 'N/A')}`")
+                                st.caption(
+                                    f"Timestamp: {datetime.now().isoformat()}")
 
                             else:
                                 error_detail = response.text
-                                st.markdown('<div class="error-card">', unsafe_allow_html=True)
-                                st.markdown(f"❌ **Error** (HTTP {response.status_code})")
+                                st.markdown('<div class="error-card">',
+                                            unsafe_allow_html=True)
+                                st.markdown(
+                                    f"**Error** (HTTP {response.status_code})")
                                 st.markdown('</div>', unsafe_allow_html=True)
                                 st.error(f"Response: {error_detail}")
 
                         except requests.exceptions.ConnectionError:
                             st.error(
-                                f"❌ Cannot connect to {api_endpoint}\n\n"
+                                f"Cannot connect to {api_endpoint}\n\n"
                                 f"**Troubleshooting:**\n"
                                 f"- Local mode: Ensure FastAPI is running (`uvicorn app.app_main:app --reload`)\n"
                                 f"- AWS mode: Check that API Gateway URL is correct and accessible"
                             )
                         except requests.exceptions.Timeout:
-                            st.error("⏱️ Request timed out. The model might be slow to respond.")
+                            st.error(
+                                "Request timed out. The model might be slow to respond.")
                         except Exception as e:
-                            st.error(f"❌ Error: {str(e)}")
+                            st.error(f"Error: {str(e)}")
             else:
                 if api_mode == "Local (FastAPI)":
-                    st.warning("⚠️ Please configure FastAPI host in the sidebar")
+                    st.warning(
+                        "Please configure FastAPI host in the sidebar")
                 else:
-                    st.warning("⚠️ Please paste AWS API Gateway URL in the sidebar")
+                    st.warning(
+                        "Please paste AWS API Gateway URL in the sidebar")
     else:
         # No image uploaded
         st.info("👆 Upload an image to get started")
 
         # Sample images info
-        with st.expander("📚 Sample Images for Testing"):
+        with st.expander("Sample Images for Testing"):
             st.markdown("""
             **Available test images:**
             - `tests/data/dog_001.avif` - Example dog image
@@ -272,7 +285,7 @@ with tab_inference:
 st.markdown("---")
 st.markdown("""
 <div style='text-align: center; color: #666; font-size: 0.8rem;'>
-    🚀 AWS Serverless ML Pipeline | MobileNetV2 ONNX Runtime | Active Learning Enabled
+    AWS Serverless ML Pipeline | MobileNetV2 ONNX Runtime | Active Learning Enabled
     <br>
     For issues or feedback, visit the GitHub repository.
 </div>
