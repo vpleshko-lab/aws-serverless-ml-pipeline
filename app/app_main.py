@@ -100,7 +100,7 @@ async def predict(file: UploadFile = File(...)):
                 'prediction_id': log_id,
                 'timestamp': timestamp,
                 'predicted_class': predicted_class,
-                'confidence': str(round(confidence, 4)), 
+                'confidence': str(round(confidence, 4)),
                 'latency_ms': str(round(latency_ms, 2)),
                 's3_path': s3_key,
                 'model_version': MODEL_VERSION,
@@ -136,7 +136,8 @@ async def predict(file: UploadFile = File(...)):
         "log_id": log_id,
         "class": predicted_class,
         "confidence": round(confidence, 4),
-        "status": log_status
+        "status": log_status,
+        "latency_ms": round(latency_ms, 3)
     }
     if logging_error:
         response["error"] = logging_error
