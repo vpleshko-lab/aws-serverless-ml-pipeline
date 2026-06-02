@@ -1,5 +1,5 @@
 import io
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 from PIL import Image
 import numpy as np
 import pytest
