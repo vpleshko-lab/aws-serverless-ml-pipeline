@@ -1,6 +1,5 @@
 import io
 import time
-import json
 import uuid
 import boto3
 import numpy as np

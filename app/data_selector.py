@@ -1,6 +1,5 @@
 import boto3
-from boto3.dynamodb.conditions import Key, Attr
-import os
+from boto3.dynamodb.conditions import Key
 
 dynamodb = boto3.resource('dynamodb').Table("InferenceLogs")
 s3 = boto3.client('s3')

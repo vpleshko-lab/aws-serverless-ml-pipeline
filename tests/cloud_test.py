@@ -29,7 +29,7 @@ def test_inference():
 
     except FileNotFoundError:
         logger.error(f"File not found at {IMAGE_PATH}")
-    except Exception as e:
+    except Exception:
         logger.exception("Unexpected error during request")
 
 
