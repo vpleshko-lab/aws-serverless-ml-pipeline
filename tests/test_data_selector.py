@@ -1,6 +1,9 @@
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
-import app.data_selector as data_selector
+# Mock boto3 clients before importing the module
+with patch('app.data_selector.dynamodb'), \
+     patch('app.data_selector.s3'):
+    import app.data_selector as data_selector
 
 
 def test_handler_processes_items_and_calls_aws_methods():
@@ -10,7 +13,8 @@ def test_handler_processes_items_and_calls_aws_methods():
         'timestamp': 'ts1',
         's3_path': 'inferences/2026/06/01/pred1.jpg',
         'confidence': '0.5',
-        'is_labeled': 'False'
+        'is_labeled': 'False',
+        'latency_ms': "1.15"
     }
 
     mock_dynamodb = Mock()

@@ -1,10 +1,16 @@
 import io
+from unittest.mock import patch, MagicMock
 from PIL import Image
 import numpy as np
 import pytest
 
-from app.app_main import preprocess_image
-from fastapi import HTTPException
+# Mock boto3 clients before importing the app module
+with patch('app.app_main.s3'), \
+     patch('app.app_main.dynamodb'), \
+     patch('app.app_main.cloudwatch'), \
+     patch('app.app_main.ort.InferenceSession'):
+    from app.app_main import preprocess_image
+    from fastapi import HTTPException
 
 
 def make_jpeg_bytes(size=(100, 100), color=(255, 0, 0)):
