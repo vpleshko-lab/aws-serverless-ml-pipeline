@@ -38,4 +38,8 @@ jobs:
 
       # Крок 6: Pytest
       - name: Run tests with Pytest
+        env: # botocore.exceptions.NoRegionError: You must specify a region
+          AWS_DEFAULT_REGION: us-east-1
+          AWS_ACCESS_KEY_ID: mock_key_id
+          AWS_SECRET_ACCESS_KEY: mock_secret_key
         run: poetry run pytest
