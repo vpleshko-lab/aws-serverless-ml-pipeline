@@ -7,11 +7,7 @@ Supports both local FastAPI backend and AWS API Gateway endpoints.
 
 import streamlit as st
 import requests
-import numpy as np
 from PIL import Image
-import io
-from typing import Optional
-import os
 from datetime import datetime
 
 # Page configuration

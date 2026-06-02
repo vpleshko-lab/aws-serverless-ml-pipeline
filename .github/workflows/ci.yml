@@ -1,0 +1,45 @@
+name: Python Code Quality Check
+
+on:
+  push:
+    branches: [dev]
+  pull_request:
+    branches: [main]
+
+jobs:
+  run-tests:
+    runs-on: ubuntu-latest
+    steps:
+      # Крок 1: завантаження коду репозиторію
+      - name: Check out repository code
+        uses: actions/checkout@v4
+
+      # Крок 2: встановлення Python
+      - name: Set Up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      # Крок 3: встановлення Poetry
+      - name: Install and configure Poetry
+        uses: snok/install-poetry@v1
+        with:
+          version: 2.2.1
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+
+      # Крок 4: встановлення залежностей
+      - name: Install depedencies
+        run: poetry install --no-interaction
+
+      # Крок 5: Лінтер та тести
+      - name: Run Linter (ruff)
+        run: poetry run ruff check .
+
+      # Крок 6: Pytest
+      - name: Run tests with Pytest
+        env: # botocore.exceptions.NoRegionError: You must specify a region
+          AWS_DEFAULT_REGION: us-east-1
+          AWS_ACCESS_KEY_ID: mock_key_id
+          AWS_SECRET_ACCESS_KEY: mock_secret_key
+        run: poetry run pytest
