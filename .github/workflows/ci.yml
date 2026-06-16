@@ -1,4 +1,4 @@
-name: Python Code Quality Check
+name: Python Code & Infra Quality Check
 
 on:
   push:
@@ -20,6 +20,12 @@ jobs:
         with:
           python-version: "3.12"
 
+      # Крок 2.5: Встановлення Node.js (Необхідно для AWS CDK CLI)
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
       # Крок 3: встановлення Poetry
       - name: Install and configure Poetry
         uses: snok/install-poetry@v1
@@ -28,17 +34,35 @@ jobs:
           virtualenvs-create: true
           virtualenvs-in-project: true
 
-      # Крок 4: встановлення залежностей
-      - name: Install depedencies
+      # Крок 4: встановлення залежностей проєкту (включаючи aws-cdk-lib)
+      - name: Install dependencies
         run: poetry install --no-interaction
 
-      # # Крок 5: Лінтер та тести
-      # - name: Run Linter (ruff)
-      #   run: poetry run ruff check .
+      # Крок 4.5: Встановлення глобального AWS CDK CLI через npm
+      - name: Install AWS CDK CLI
+        run: npm install -g aws-cdk
 
-      # Крок 6: Pytest
+      # Крок 5: Лінтер коду (ruff)
+      - name: Run Linter (ruff)
+        run: poetry run ruff check .
+
+      # Крок 5.5: Лінтер для Dockerfile (hadolint)
+      # Перевіряє Dockerfile на помилки безпеки та оптимізацію шарів
+      - name: Lint Dockerfile
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: Dockerfile # Якщо Dockerfile лежить в іншому місці, вкажи шлях (наприклад, src/Dockerfile)
+
+      # Крок 5.7: Валідація інфраструктури (CDK Synth)
+      # Перевіряє, чи компілюється Python-код інфраструктури без помилок
+      - name: Run CDK Synth Check
+        run: |
+          cd infra-cdk
+          poetry run cdk synth
+
+      # Крок 6: Pytest (твої тести логіки інференсу / відбору та юніт-тести інфраструктури)
       - name: Run tests with Pytest
-        env: # botocore.exceptions.NoRegionError: You must specify a region
+        env:
           AWS_DEFAULT_REGION: us-east-1
           AWS_ACCESS_KEY_ID: mock_key_id
           AWS_SECRET_ACCESS_KEY: mock_secret_key
