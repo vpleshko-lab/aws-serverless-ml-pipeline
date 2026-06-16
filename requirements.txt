@@ -2,7 +2,6 @@ fastapi
 uvicorn
 mangum
 onnxruntime
-wandb
 pillow
 numpy
 python-multipart
@@ -10,3 +9,4 @@ pytest
 python-dotenv
 boto3
 logging
+aws-cdk-lib
