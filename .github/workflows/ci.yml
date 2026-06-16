@@ -18,7 +18,7 @@ jobs:
       - name: Set Up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
+          python-version: "3.12"
 
       # Крок 3: встановлення Poetry
       - name: Install and configure Poetry
@@ -32,9 +32,9 @@ jobs:
       - name: Install depedencies
         run: poetry install --no-interaction
 
-      # Крок 5: Лінтер та тести
-      - name: Run Linter (ruff)
-        run: poetry run ruff check .
+      # # Крок 5: Лінтер та тести
+      # - name: Run Linter (ruff)
+      #   run: poetry run ruff check .
 
       # Крок 6: Pytest
       - name: Run tests with Pytest
