@@ -51,7 +51,7 @@ jobs:
       - name: Lint Dockerfile
         uses: hadolint/hadolint-action@v3.1.0
         with:
-          dockerfile: Dockerfile # Якщо Dockerfile лежить в іншому місці, вкажи шлях (наприклад, src/Dockerfile)
+          dockerfile: Dockerfile
 
       # Крок 5.7: Валідація інфраструктури (CDK Synth)
       # Перевіряє, чи компілюється Python-код інфраструктури без помилок
