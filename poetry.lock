@@ -81,6 +81,78 @@ files = [
 ]
 
 [[package]]
+name = "aws-cdk-asset-awscli-v1"
+version = "2.2.282"
+description = "A library that contains the AWS CLI for use in Lambda Layers"
+optional = false
+python-versions = "~=3.10"
+groups = ["main"]
+files = [
+    {file = "aws_cdk_asset_awscli_v1-2.2.282-py3-none-any.whl", hash = "sha256:24139da0eb1be59f8cfda22c6343d51e8d50bb89b5052b049cfab92683de7790"},
+    {file = "aws_cdk_asset_awscli_v1-2.2.282.tar.gz", hash = "sha256:f86e61653927f77fb235b5ec148c955c610117430c869d182c8b20f7e07e2df2"},
+]
+
+[package.dependencies]
+jsii = ">=1.130.0,<2.0.0"
+publication = ">=0.0.3"
+typeguard = "2.13.3"
+
+[[package]]
+name = "aws-cdk-asset-node-proxy-agent-v6"
+version = "2.1.2"
+description = "@aws-cdk/asset-node-proxy-agent-v6"
+optional = false
+python-versions = "~=3.9"
+groups = ["main"]
+files = [
+    {file = "aws_cdk_asset_node_proxy_agent_v6-2.1.2-py3-none-any.whl", hash = "sha256:1028bff16fdb87b8c82404e9b48f32ed383429dece84067f47379c4049da5da4"},
+    {file = "aws_cdk_asset_node_proxy_agent_v6-2.1.2.tar.gz", hash = "sha256:1340588dd351dcae37e07188f39075364f73ccde6ed9468c1184b06ada4af665"},
+]
+
+[package.dependencies]
+jsii = ">=1.129.0,<2.0.0"
+publication = ">=0.0.3"
+typeguard = "2.13.3"
+
+[[package]]
+name = "aws-cdk-cloud-assembly-schema"
+version = "54.2.0"
+description = "Schema for the protocol between CDK framework and CDK CLI"
+optional = false
+python-versions = "~=3.10"
+groups = ["main"]
+files = [
+    {file = "aws_cdk_cloud_assembly_schema-54.2.0-py3-none-any.whl", hash = "sha256:a7038bffa1aaf3365b72147987396bcf0b9951c3b53b2eebfc181b7cb4227067"},
+    {file = "aws_cdk_cloud_assembly_schema-54.2.0.tar.gz", hash = "sha256:2e3a05fca6a28f49811b7b011fce12b03dd0adb15c37a0ad2d1b16d8d66fe95a"},
+]
+
+[package.dependencies]
+jsii = ">=1.132.0,<2.0.0"
+publication = ">=0.0.3"
+typeguard = "2.13.3"
+
+[[package]]
+name = "aws-cdk-lib"
+version = "2.258.0"
+description = "Version 2 of the AWS Cloud Development Kit library"
+optional = false
+python-versions = ">=3.10"
+groups = ["main"]
+files = [
+    {file = "aws_cdk_lib-2.258.0-py3-none-any.whl", hash = "sha256:aacd129577b8cb294d37f678778d427e03ee2cc9c4b0283fe1baf0d576655f9a"},
+    {file = "aws_cdk_lib-2.258.0.tar.gz", hash = "sha256:415153ab4f22f1e14163c1b1b39fa1835a8afb77d18cb16c0653caef5a40055a"},
+]
+
+[package.dependencies]
+"aws-cdk.asset-awscli-v1" = "2.2.282"
+"aws-cdk.asset-node-proxy-agent-v6" = ">=2.1.2,<3.0.0"
+"aws-cdk.cloud-assembly-schema" = ">=54.0.0,<55.0.0"
+constructs = ">=10.5.0,<11.0.0"
+jsii = ">=1.133.0,<2.0.0"
+publication = ">=0.0.3"
+typeguard = "2.13.3"
+
+[[package]]
 name = "blinker"
 version = "1.9.0"
 description = "Fast, simple object-to-object and broadcast signaling"
@@ -143,6 +215,33 @@ files = [
     {file = "cachetools-7.1.4-py3-none-any.whl", hash = "sha256:323dc4127934744db5b54eb4924482d7edafbf9554e820d1531c2e08c0e4ef54"},
     {file = "cachetools-7.1.4.tar.gz", hash = "sha256:437f55a4e0c1b01a4f3077cc470e6991d47430970e36fbcb77e2be0df4fc1cd6"},
 ]
+
+[[package]]
+name = "cattrs"
+version = "26.1.0"
+description = "Composable complex class support for attrs and dataclasses."
+optional = false
+python-versions = ">=3.10"
+groups = ["main"]
+files = [
+    {file = "cattrs-26.1.0-py3-none-any.whl", hash = "sha256:d1e0804c42639494d469d08d4f26d6b9de9b8ab26b446db7b5f8c2e97f7c3096"},
+    {file = "cattrs-26.1.0.tar.gz", hash = "sha256:fa239e0f0ec0715ba34852ce813986dfed1e12117e209b816ab87401271cdd40"},
+]
+
+[package.dependencies]
+attrs = ">=25.4.0"
+typing-extensions = ">=4.14.0"
+
+[package.extras]
+bson = ["pymongo (>=4.4.0)"]
+cbor2 = ["cbor2 (>=5.4.6)"]
+msgpack = ["msgpack (>=1.0.5)"]
+msgspec = ["msgspec (>=0.19.0) ; implementation_name == \"cpython\""]
+orjson = ["orjson (>=3.11.3) ; implementation_name == \"cpython\""]
+pyyaml = ["pyyaml (>=6.0)"]
+tomlkit = ["tomlkit (>=0.11.8)"]
+tomllib = ["tomli (>=1.1.0) ; python_version < \"3.11\"", "tomli-w (>=1.1.0)"]
+ujson = ["ujson (>=5.10.0)"]
 
 [[package]]
 name = "certifi"
@@ -324,6 +423,23 @@ humanfriendly = ">=9.1"
 
 [package.extras]
 cron = ["capturer (>=2.4)"]
+
+[[package]]
+name = "constructs"
+version = "10.6.0"
+description = "A programming model for software-defined state"
+optional = false
+python-versions = "~=3.9"
+groups = ["main"]
+files = [
+    {file = "constructs-10.6.0-py3-none-any.whl", hash = "sha256:ad4ffabdb53c17cde00fb94e441a1ba9fddac57c92ad49d263f8dbd416cec513"},
+    {file = "constructs-10.6.0.tar.gz", hash = "sha256:bc55d1d390142424861e5ff5c6b8c243c4bae18fe7302e0939c2003f329ba365"},
+]
+
+[package.dependencies]
+jsii = ">=1.127.0,<2.0.0"
+publication = ">=0.0.3"
+typeguard = "2.13.3"
 
 [[package]]
 name = "contourpy"
@@ -860,6 +976,26 @@ files = [
     {file = "jmespath-1.1.0-py3-none-any.whl", hash = "sha256:a5663118de4908c91729bea0acadca56526eb2698e83de10cd116ae0f4e97c64"},
     {file = "jmespath-1.1.0.tar.gz", hash = "sha256:472c87d80f36026ae83c6ddd0f1d05d4e510134ed462851fd5f754c8c3cbb88d"},
 ]
+
+[[package]]
+name = "jsii"
+version = "1.134.0"
+description = "Python client for jsii runtime"
+optional = false
+python-versions = ">=3.10"
+groups = ["main"]
+files = [
+    {file = "jsii-1.134.0-py3-none-any.whl", hash = "sha256:c2288ce3568222883e1620dc9c2f2477331d36a4925a84711cf48297ee13cb50"},
+    {file = "jsii-1.134.0.tar.gz", hash = "sha256:22aa450dc9538952453dcd4e51de0b9e92e3c94a6b4e468832acbcbd7b124b57"},
+]
+
+[package.dependencies]
+attrs = ">=21.2,<27.0"
+cattrs = ">=1.8,<27.0"
+publication = ">=0.0.3"
+python-dateutil = "*"
+typeguard = "2.13.3"
+typing_extensions = ">=3.8,<5.0"
 
 [[package]]
 name = "jsonschema"
@@ -2157,6 +2293,18 @@ files = [
 ]
 
 [[package]]
+name = "publication"
+version = "0.0.3"
+description = "Publication helps you maintain public-api-friendly modules by preventing unintentional access to private implementation details via introspection."
+optional = false
+python-versions = "*"
+groups = ["main"]
+files = [
+    {file = "publication-0.0.3-py2.py3-none-any.whl", hash = "sha256:0248885351febc11d8a1098d5c8e3ab2dabcf3e8c0c96db1e17ecd12b53afbe6"},
+    {file = "publication-0.0.3.tar.gz", hash = "sha256:68416a0de76dddcdd2930d1c8ef853a743cc96c82416c4e4d3b5d901c6276dc4"},
+]
+
+[[package]]
 name = "pyarrow"
 version = "24.0.0"
 description = "Python library for Apache Arrow"
@@ -3445,6 +3593,22 @@ tests = ["autopep8", "flake8", "isort", "numpy", "pytest", "scipy (>=1.7.1)", "t
 tutorials = ["matplotlib", "pandas", "tabulate", "torch"]
 
 [[package]]
+name = "typeguard"
+version = "2.13.3"
+description = "Run-time type checker for Python"
+optional = false
+python-versions = ">=3.5.3"
+groups = ["main"]
+files = [
+    {file = "typeguard-2.13.3-py3-none-any.whl", hash = "sha256:5e3e3be01e887e7eafae5af63d1f36c849aaa94e3a0112097312aabfa16284f1"},
+    {file = "typeguard-2.13.3.tar.gz", hash = "sha256:00edaa8da3a133674796cf5ea87d9f4b4c367d77476e185e80251cc13dfbb8c4"},
+]
+
+[package.extras]
+doc = ["sphinx-autodoc-typehints (>=1.2.0)", "sphinx-rtd-theme"]
+test = ["mypy ; platform_python_implementation != \"PyPy\"", "pytest", "typing-extensions"]
+
+[[package]]
 name = "typing-extensions"
 version = "4.15.0"
 description = "Backported and Experimental Type Hints for Python 3.9+"
@@ -3684,4 +3848,4 @@ files = [
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.11,<3.15"
-content-hash = "a738a609dea960f5ec89751cfcb54afd1087f3e058ed1f47a7f39c43c4ace71a"
+content-hash = "c9a1719e0adcc8036e1b6797802a0d32247c52a318edaca6ce88cd5d94d2adef"
