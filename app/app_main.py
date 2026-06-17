@@ -1,8 +1,11 @@
+import os
 import io
 import time
 import uuid
 import boto3
 import numpy as np
+import mlflow
+from mlflow.tracking import MlflowClient  # noqa: F401
 import onnxruntime as ort
 from fastapi import FastAPI, File, UploadFile, HTTPException
 from PIL import Image
@@ -31,14 +34,48 @@ DIMENSIONS = [
     {'Name': 'Project', 'Value': 'CloudPipeline'}
 ]
 
-# завантаження моделі один раз
+# Динамічне завантаження моделі з MLflow
+
+
+def load_model_from_registry():
+    """Завантажує ONNX модель з віддаленого або локального реєстру Mlflow"""
+    tracking_uri = os.environ.get(
+        "MLFLOW_TRACKING_URI", "http://localhost:5000")
+    mlflow.set_tracking_uri(tracking_uri)
+
+    model_name = "Classification-MobileNet"
+    model_stage = "Production"  # тег моделі, яку імпортуєш
+
+    logger.info(
+        f"Connecting to Mlflow at {tracking_uri} to fetch model '{model_name}'...")
+
+    model_uri = f"models://{model_name}/{model_stage}"
+
+    local_model_dir = mlflow.artifacts.download_artifacts(
+        artifact_uri=model_uri)
+    onnx_path = os.path.join(local_model_dir, "model.onnx")
+
+    return onnx_path
+
+
+# Ініціалізація сесії один раз при старті контейнера
 try:
-    ort_session = ort.InferenceSession("app/model.onnx")
+    onnx_model_path = load_model_from_registry()
+
+    ort_session = ort.InferenceSession(onnx_model_path)
     input_name = ort_session.get_inputs()[0].name
     logger.info("Model ONNX is succesfull load")
 except Exception as e:
-    logger.error(f"Error while loading model: {e}")
-    ort_session = None
+    logger.error(f"Error while loading model from Mlflow: {e}")
+    # fallback на локальну модель
+    try:
+        ort_session = ort.InferenceSession("app/model.onnx")
+        input_name = ort_session.get_inputs()[0].name
+        logger.warning("Fallback: Loaded local model.onnx instead of MLflow")
+    except Exception as local_err:
+        logger.critical(
+            f"Critical: All model sources failed. Inference offline: {local_err}")
+        ort_session = None
 
 
 def preprocess_image(image_bytes):
