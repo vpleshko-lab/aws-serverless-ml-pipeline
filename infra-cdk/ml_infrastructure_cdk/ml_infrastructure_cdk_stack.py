@@ -1,4 +1,3 @@
-import os
 from aws_cdk import (
     Stack,
     Duration,
@@ -12,9 +11,6 @@ from aws_cdk import (
     aws_events_targets as targets,
 )
 from constructs import Construct
-
-project_root = os.path.abspath(os.path.join(
-    os.path.dirname(__file__), "..", ".."))
 
 
 class MlInfrastructureCdkStack(Stack):
@@ -90,7 +86,7 @@ class MlInfrastructureCdkStack(Stack):
         self.inference_lambda = _lambda.DockerImageFunction(
             self, "MlEdgeInferenceLambda",
             function_name="ml-serverless-inference",
-            code=_lambda.DockerImageCode.from_image_asset(project_root),
+            code=_lambda.DockerImageCode.from_image_asset("../"),
             timeout=Duration.minutes(5),
             memory_size=1024
         )
@@ -99,7 +95,7 @@ class MlInfrastructureCdkStack(Stack):
         self.data_selector_lambda = _lambda.DockerImageFunction(
             self, "MlDataSelectorLambda",
             function_name="ml-serverless-data-selector",
-            code=_lambda.DockerImageCode.from_image_asset(project_root),
+            code=_lambda.DockerImageCode.from_image_asset("../"),
             timeout=Duration.minutes(10),
             memory_size=2048,
             environment={
