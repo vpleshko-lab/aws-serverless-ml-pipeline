@@ -41,3 +41,7 @@ build-backend = "poetry.core.masonry.api"
 dev = [
     "ruff (>=0.15.15,<0.16.0)"
 ]
+
+[tool.pytest.ini_options]
+norecursedirs = ["cdk.out", ".git", ".venv", "venv"]
+addopts = "--ignore=tests/cloud_test.py"
