@@ -1,5 +1,6 @@
 # === AWS CDK ===
 cdk.out/
+infra-cdk/cdk.out/
 .cdk.staging/
 .config/
 
