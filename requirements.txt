@@ -10,3 +10,4 @@ python-dotenv
 boto3
 logging
 aws-cdk-lib
+mlflow==2.13.0
