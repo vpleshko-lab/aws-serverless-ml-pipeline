@@ -9,6 +9,8 @@ from aws_cdk import (
     aws_lambda as _lambda,
     aws_events as events,
     aws_events_targets as targets,
+    aws_ecs,
+    aws_ecs_patterns
 )
 from constructs import Construct
 
@@ -127,3 +129,48 @@ class MlInfrastructureCdkStack(Stack):
         self.inference_logs_table.grant_read_write_data(
             self.data_selector_lambda)
         self.labeling_queue_bucket.grant_read_write(self.data_selector_lambda)
+
+        # спринт 3
+        # ECS Cluster всередині VPC
+        self.ecs_cluster = aws_ecs.Cluster(
+            self, "MlflowEcsCluster",
+            vpc=self.vpc,  # та сама, де лежить RDS
+            cluster_name="mlflow-metadata-cluster"
+        )
+
+        # опис сервісу Mlflow через Fargate з LoadBalancer
+        self.mlflow_service = aws_ecs_patterns.ApplicationLoadBalancedFargateService(
+            self, "MlflowFargateService",
+            cluster=self.ecs_cluster,
+            cpu=512,  # 0.5 vCPU для старту і трекінгу метрик достатньо
+            memory_limit_mib=1024,  # 1gb ram
+            desired_count=1,  # 1 Container
+            task_image_options=aws_ecs_patterns.ApplicationLoadBalancedTaskImageOptions(
+                # вказання cdk зібрати docker образ з папки
+                image=aws_ecs.ContainerImage.from_asset("../mlflow-server"),
+                container_port=5000,
+                # змінні оточення для пікдлючення до RDS & S3
+                environment={
+                    "AWS_DEFAULT_REGION": self.region,
+                    "MLFLOW_S3_ENDPOINT_URL": f"https://s3.{self.region}.amazonaws.com"
+                },
+                # безпечна передача секретів з rds інстанції
+                secrets={
+                    "DB_USERNAME": aws_ecs.Secret.from_secrets_manager(self.rds_db.secret, "username"),
+                    "DB_PASSWORD": aws_ecs.Secret.from_secrets_manager(self.rds_db.secret, "password"),
+                    "DB_HOST": aws_ecs.Secret.from_secrets_manager(self.rds_db.secret, "host"),
+                    "DB_PORT": aws_ecs.Secret.from_secrets_manager(self.rds_db.secret, "port"),
+                    "DB_NAME": aws_ecs.Secret.from_secrets_manager(self.rds_db.secret, "dbname")
+                }
+            ),
+            public_load_balancer=True  # Роблю ALB публічним, щоб можна було зайти в UI
+        )
+        # дозвіл сервісу MLflow підключитись до бази даних postgresql
+        self.rds_db.connections.allow_from(
+            self.mlflow_service.service,
+            ec2.Port.tcp(5432),
+            description="Allow MLflow container to access PostgreSQL"
+        )
+        # запис/читання артефакти моделі з mlflow в s3
+        self.model_bucket.grant_read_write(
+            self.mlflow_service.task_definition.task_role)
