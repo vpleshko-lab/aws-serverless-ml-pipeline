@@ -34,3 +34,7 @@ cdk.out/
 
 # Ruff (CI)
 .ruff_cache/
+
+# ML
+.pt
+mlruns/
