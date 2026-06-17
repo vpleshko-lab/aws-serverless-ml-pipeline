@@ -56,8 +56,10 @@ jobs:
       # Крок 5.7: Валідація інфраструктури (CDK Synth)
       # Перевіряє, чи компілюється Python-код інфраструктури без помилок
       - name: Run CDK Synth Check
+
         run: |
           cd infra-cdk
+          rm -rf cdk.out
           poetry run cdk synth
 
       # Крок 6: Pytest (твої тести логіки інференсу / відбору та юніт-тести інфраструктури)
