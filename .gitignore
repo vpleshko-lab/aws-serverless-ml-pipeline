@@ -31,3 +31,6 @@ auth.json
 cdk.out/
 .cdk.staging/
 .config/
+
+# Ruff (CI)
+.ruff_cache/
