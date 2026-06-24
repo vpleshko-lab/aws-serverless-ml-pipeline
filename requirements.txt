@@ -6,6 +6,6 @@ pydantic==2.13.4
 boto3==1.42.83
 numpy==1.26.4
 onnxruntime==1.19.2
-opencv-python==4.9.0.80
+opencv-python-headless==4.9.0.80
 pillow==12.1.1
 mlflow-skinny==3.14.0
