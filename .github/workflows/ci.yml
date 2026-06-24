@@ -68,4 +68,4 @@ jobs:
           AWS_DEFAULT_REGION: us-east-1
           AWS_ACCESS_KEY_ID: mock_key_id
           AWS_SECRET_ACCESS_KEY: mock_secret_key
-        run: poetry run pytest
+        run: poetry run pytest --durations=0 --durations-min=1.0 -vv
