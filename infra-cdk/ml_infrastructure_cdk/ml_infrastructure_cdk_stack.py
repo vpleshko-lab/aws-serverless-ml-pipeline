@@ -84,57 +84,10 @@ class MlInfrastructureCdkStack(Stack):
             removal_policy=RemovalPolicy.RETAIN
         )
 
-        # Lambda-функція інференсу (Docker-контейнер з кореня проєкту)
-        self.inference_lambda = _lambda.DockerImageFunction(
-            self, "MlEdgeInferenceLambda",
-            function_name="ml-serverless-inference",
-            code=_lambda.DockerImageCode.from_image_asset("../"),
-            timeout=Duration.minutes(5),
-            memory_size=1024
-        )
-
-        # Lambda-функція Active Learning відбору (Docker-контейнер з кореня проєкту)
-        self.data_selector_lambda = _lambda.DockerImageFunction(
-            self, "MlDataSelectorLambda",
-            function_name="ml-serverless-data-selector",
-            code=_lambda.DockerImageCode.from_image_asset("../"),
-            timeout=Duration.minutes(10),
-            memory_size=2048,
-            environment={
-                "LOGS_BUCKET": self.ml_logs_bucket.bucket_name,
-                "QUEUE_BUCKET": self.labeling_queue_bucket.bucket_name,
-                "DYNAMODB_TABLE": self.inference_logs_table.table_name
-            }
-        )
-
-        # 3. АВТОМАТИЗАЦІЯ ТА КЕРУВАННЯ ДОСТУПАМИ (IAM & Крон-тригери)
-
-        # правило EventBridge для запуску відбору щонеділі о 12:00 UTC
-        self.cron_rule = events.Rule(
-            self, "WeeklyDataSelectorTrigger",
-            rule_name="weekly-active-learning-selector",
-            schedule=events.Schedule.cron(
-                minute="0", hour="12", week_day="SUN"),
-            enabled=False
-        )
-
-        self.cron_rule.add_target(
-            targets.LambdaFunction(self.data_selector_lambda))
-
-        # права доступу
-        self.ml_logs_bucket.grant_read_write(self.inference_lambda)
-        self.inference_logs_table.grant_read_write_data(self.inference_lambda)
-
-        self.ml_logs_bucket.grant_read(self.data_selector_lambda)
-        self.inference_logs_table.grant_read_write_data(
-            self.data_selector_lambda)
-        self.labeling_queue_bucket.grant_read_write(self.data_selector_lambda)
-
-        # спринт 3
-        # ECS Cluster всередині VPC
+        # 3. ECS Cluster
         self.ecs_cluster = aws_ecs.Cluster(
             self, "MlflowEcsCluster",
-            vpc=self.vpc,  # та сама, де лежить RDS
+            vpc=self.vpc,
             cluster_name="mlflow-metadata-cluster"
         )
 
@@ -165,6 +118,63 @@ class MlInfrastructureCdkStack(Stack):
             ),
             public_load_balancer=True  # Роблю ALB публічним, щоб можна було зайти в UI
         )
+
+        # 4. Serverless обчислювальний шар (lambda functions)
+        mlflow_url = f"http://{self.mlflow_service.load_balancer.load_balancer_dns_name}"
+
+        # Lambda-функція інференсу (Docker-контейнер з кореня проєкту)
+        self.inference_lambda = _lambda.DockerImageFunction(
+            self, "MlEdgeInferenceLambda",
+            function_name="ml-serverless-inference",
+            code=_lambda.DockerImageCode.from_image_asset("../"),
+            timeout=Duration.minutes(5),
+            memory_size=1024,
+            # прокидання змінні оточення для коректного інференсу та звязку з хмарним Mlflow
+            environment={
+                "MLFLOW_TRACKING_URI": mlflow_url,
+                "LOGS_BUCKET": self.ml_logs_bucket.bucket_name,
+                "DYNAMODB_TABLE": self.inference_logs_table.table_name
+            }
+        )
+
+        # Lambda-функція Active Learning відбору (Docker-контейнер з кореня проєкту)
+        self.data_selector_lambda = _lambda.DockerImageFunction(
+            self, "MlDataSelectorLambda",
+            function_name="ml-serverless-data-selector",
+            code=_lambda.DockerImageCode.from_image_asset("../"),
+            timeout=Duration.minutes(10),
+            memory_size=2048,
+            environment={
+                "MLFLOW_TRACKING_URI": mlflow_url,
+                "LOGS_BUCKET": self.ml_logs_bucket.bucket_name,
+                "QUEUE_BUCKET": self.labeling_queue_bucket.bucket_name,
+                "DYNAMODB_TABLE": self.inference_logs_table.table_name
+            }
+        )
+
+        # 6. АВТОМАТИЗАЦІЯ ТА КЕРУВАННЯ ДОСТУПАМИ (IAM & Крон-тригери)
+
+        # правило EventBridge для запуску відбору щонеділі о 12:00 UTC
+        self.cron_rule = events.Rule(
+            self, "WeeklyDataSelectorTrigger",
+            rule_name="weekly-active-learning-selector",
+            schedule=events.Schedule.cron(
+                minute="0", hour="12", week_day="SUN"),
+            enabled=False
+        )
+
+        self.cron_rule.add_target(
+            targets.LambdaFunction(self.data_selector_lambda))
+
+        # права доступу
+        self.ml_logs_bucket.grant_read_write(self.inference_lambda)
+        self.inference_logs_table.grant_read_write_data(self.inference_lambda)
+
+        self.ml_logs_bucket.grant_read(self.data_selector_lambda)
+        self.inference_logs_table.grant_read_write_data(
+            self.data_selector_lambda)
+        self.labeling_queue_bucket.grant_read_write(self.data_selector_lambda)
+
         # дозвіл сервісу MLflow підключитись до бази даних postgresql
         self.rds_db.connections.allow_from(
             self.mlflow_service.service,
