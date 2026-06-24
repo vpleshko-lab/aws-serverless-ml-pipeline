@@ -116,7 +116,8 @@ class MlInfrastructureCdkStack(Stack):
                     "DB_NAME": aws_ecs.Secret.from_secrets_manager(self.rds_db.secret, "dbname")
                 }
             ),
-            public_load_balancer=True  # Роблю ALB публічним, щоб можна було зайти в UI
+            public_load_balancer=True,  # Роблю ALB публічним, щоб можна було зайти в UI
+            circuit_breaker=aws_ecs.DeploymentCircuitBreaker(rollback=True)
         )
 
         # 4. Serverless обчислювальний шар (lambda functions)

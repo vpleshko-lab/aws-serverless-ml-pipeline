@@ -1,9 +1,5 @@
 FROM public.ecr.aws/lambda/python:3.12
 
-# залежності
-# hadolint ignore=DL3041
-RUN dnf install -y --nogpgcheck mesa-libGL && dnf clean all
-
 # робоча папка проекту (DL3045)
 WORKDIR ${LAMBDA_TASK_ROOT}
 
