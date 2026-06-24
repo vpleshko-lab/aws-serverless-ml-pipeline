@@ -7,19 +7,17 @@ import numpy as np
 import mlflow
 from mlflow.tracking import MlflowClient  # noqa: F401
 import onnxruntime as ort
-from fastapi import FastAPI, File, UploadFile, HTTPException
+from fastapi import FastAPI, File, UploadFile, HTTPException, Request
 from PIL import Image
 from mangum import Mangum
 from datetime import datetime
 import logging
+from contextlib import asynccontextmanager
 from .logger_setup import setup_app_logging
 
 # Logger
 setup_app_logging()
 logger = logging.getLogger(__name__)
-
-app = FastAPI()
-handler = Mangum(app)
 
 # S3 Client
 s3 = boto3.client('s3')
@@ -58,24 +56,35 @@ def load_model_from_registry():
     return onnx_path
 
 
-# Ініціалізація сесії один раз при старті контейнера
-try:
-    onnx_model_path = load_model_from_registry()
-
-    ort_session = ort.InferenceSession(onnx_model_path)
-    input_name = ort_session.get_inputs()[0].name
-    logger.info("Model ONNX is succesfull load")
-except Exception as e:
-    logger.error(f"Error while loading model from Mlflow: {e}")
-    # fallback на локальну модель
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    ort_session = None
+    input_name = None
+    # Ініціалізація сесії один раз при старті контейнера
     try:
-        ort_session = ort.InferenceSession("app/model.onnx")
+        onnx_model_path = load_model_from_registry()
+
+        ort_session = ort.InferenceSession(onnx_model_path)
         input_name = ort_session.get_inputs()[0].name
-        logger.warning("Fallback: Loaded local model.onnx instead of MLflow")
-    except Exception as local_err:
-        logger.critical(
-            f"Critical: All model sources failed. Inference offline: {local_err}")
-        ort_session = None
+        logger.info("Model ONNX is succesfull load")
+    except Exception as e:
+        logger.error(f"Error while loading model from Mlflow: {e}")
+        # fallback на локальну модель
+        try:
+            ort_session = ort.InferenceSession("app/model.onnx")
+            input_name = ort_session.get_inputs()[0].name
+            logger.warning(
+                "Fallback: Loaded local model.onnx instead of MLflow")
+        except Exception as local_err:
+            logger.critical(
+                f"Critical: All model sources failed. Inference offline: {local_err}")
+            ort_session = None
+    yield {"ort_session": ort_session, "input_name": input_name}
+
+    logger.info("Shutting down application")
+
+app = FastAPI(lifespan=lifespan)
+handler = Mangum(app)
 
 
 def preprocess_image(image_bytes):
@@ -97,7 +106,11 @@ def preprocess_image(image_bytes):
 
 
 @app.post("/predict")
-async def predict(file: UploadFile = File(...)):
+async def predict(request: Request, file: UploadFile = File(...)):
+    # діставання моделі зі стану додатка
+    ort_session = request.state.ort_session
+    input_name = request.state.input_name
+
     if ort_session is None:
         raise HTTPException(status_code=500, detail="Inference engine offline")
 
