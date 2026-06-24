@@ -1,12 +1,17 @@
 FROM public.ecr.aws/lambda/python:3.12
 
+# залежності
 RUN dnf install -y mesa-libGL && dnf clean all
 
+# робоча папка проекту (DL3045)
+WORKDIR ${LAMBDA_TASK_ROOT}
+
+# залежності (тепер крапка "." точно вказує на /var/task)
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
+# код додатка
 COPY app/ ./app/
 
-# посилання на об'єкт усередині мого файлу
-# handler - навза змінної, якій присвоєно Mangum (handler)
+# точка входу для Mangum
 CMD ["app.app_main.handler"]

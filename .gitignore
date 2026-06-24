@@ -21,9 +21,20 @@ build/
 Thumbs.db
 
 # dirs
-wandb/
 tests/data/
 
 # Secrets
 .env
 auth.json
+
+# AWS CDK
+cdk.out/
+.cdk.staging/
+.config/
+
+# Ruff (CI)
+.ruff_cache/
+
+# ML
+.pt
+mlruns/

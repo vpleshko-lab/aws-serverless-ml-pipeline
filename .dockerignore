@@ -1,6 +1,29 @@
-venv
-.venv
+# === AWS CDK ===
+cdk.out/
+infra-cdk/cdk.out/
+.cdk.staging/
+.config/
+
+# === Git ===
 .git
-__pycache__
-.pytest_cache
-.ipynb_checkpoints
+.gitignore
+
+# === Python локальний кеш та середовище ===
+.venv/
+venv/
+ENV/
+env/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.ruff_cache/
+
+# === IDEs ===
+.vscode/
+.idea/
+
+# === Локальні секрети ===
+.env
+*.pem

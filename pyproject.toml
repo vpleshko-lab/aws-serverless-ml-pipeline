@@ -19,7 +19,6 @@ dependencies = [
     "fastapi (>=0.135.1,<0.136.0)",
     "uvicorn (>=0.41.0,<0.42.0)",
     "mangum (>=0.21.0,<0.22.0)",
-    "wandb (>=0.25.1,<0.26.0)",
     "pillow (>=12.1.1,<13.0.0)",
     "python-multipart (>=0.0.22,<0.0.23)",
     "pytest (>=9.0.2,<10.0.0)",
@@ -27,7 +26,11 @@ dependencies = [
     "boto3 (>=1.42.83,<2.0.0)",
     "logging (>=0.4.9.6,<0.5.0.0)",
     "streamlit (>=1.28.0,<2.0.0)",
-    "requests (>=2.31.0,<3.0.0)"
+    "requests (>=2.31.0,<3.0.0)",
+    "aws-cdk-lib (>=2.258.0,<3.0.0)",
+    "mlflow (>=3.14.0,<4.0.0)",
+    "mlflow-skinny (>=3.14.0,<4.0.0)",
+    "pydantic (>=2.13.4,<3.0.0)"
 ]
 
 [tool.poetry]
@@ -39,5 +42,13 @@ build-backend = "poetry.core.masonry.api"
 
 [dependency-groups]
 dev = [
-    "ruff (>=0.15.15,<0.16.0)"
+    "ruff (>=0.15.15,<0.16.0)",
+    "aws-cdk-lib (>=2.260.0,<3.0.0)",
+    "constructs (>=10.6.0,<11.0.0)",
+    "pytest (>=9.1.1,<10.0.0)",
+    "mlflow (>=3.14.0,<4.0.0)"
 ]
+
+[tool.pytest.ini_options]
+norecursedirs = ["cdk.out", ".git", ".venv", "venv"]
+addopts = "--ignore=tests/cloud_test.py"
