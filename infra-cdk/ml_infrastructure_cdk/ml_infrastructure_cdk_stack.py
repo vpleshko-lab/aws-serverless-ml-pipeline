@@ -2,6 +2,7 @@ from aws_cdk import (
     Stack,
     Duration,
     RemovalPolicy,
+    aws_iam as iam,
     aws_ec2 as ec2,
     aws_rds as rds,
     aws_s3 as s3,
@@ -136,6 +137,12 @@ class MlInfrastructureCdkStack(Stack):
                 "LOGS_BUCKET": self.ml_logs_bucket.bucket_name,
                 "DYNAMODB_TABLE": self.inference_logs_table.table_name
             }
+        )
+        self.inference_lambda.add_to_role_policy(
+            iam.PolicyStatement(
+                actions=["cloudwatch:PutMetricData"],
+                resources=["*"]
+            )
         )
 
         # Lambda-функція Active Learning відбору (Docker-контейнер з кореня проєкту)
