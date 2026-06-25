@@ -1,12 +1,15 @@
 FROM python:3.12-slim
 
 # Робочу папку
+ENV PYTHONUNBUFFERED=1
 WORKDIR /mlflow
+
+# Гарантовано оновлюємо pip та ставимо setuptools у систему
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir setuptools
 
 # Копіюємо залежності
 COPY requirements.txt .
-
-# Встановлюємо пакети без збереження кешу
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Експонуємо порт 5000 (стандартний порт для MLflow UI)
