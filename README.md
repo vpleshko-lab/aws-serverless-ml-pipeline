@@ -7,7 +7,7 @@
 ![Streamlit](https://img.shields.io/badge/UI-Streamlit-red?logo=streamlit)
 ![License](https://img.shields.io/badge/License-MIT-green)
 
-Production-oriented, serverless end-to-end computer vision pipeline built around MobileNet. This repository demonstrates a pragmatic MLOps implementation with inference served from AWS Lambda, an active-learning feedback loop, MLflow model registry integration, and a lightweight Streamlit UI for human-in-the-loop workflows.
+Production-oriented, serverless end-to-end computer vision pipeline built around MobileNet. This repository demonstrates a pragmatic MLOps implementation with inference served from AWS Lambda, an active-learning feedback loop, MLflow model registry integration, and a lightweight Streamlit UI.
 
 ## Key Features
 
@@ -15,43 +15,14 @@ Production-oriented, serverless end-to-end computer vision pipeline built around
 - **Automated CI/CD**: GitHub Actions validate changes and promote infrastructure with CDK/SAM.
 - **AWS CDK / IaC**: Fully scripted cloud resources for repeatable environments (`infra-cdk/`).
 - **Remote MLflow Model Registry**: Model and run tracking integrated with S3-backed MLflow store and self-hosted MLflow service.
-- **Streamlit Human-in-the-Loop UI**: Fast local UI for labeling, threshold tuning, and manual review (`app/streamlit_ui.py`).
+- **Streamlit UI**: Fast local UI for inference and manual review (`app/streamlit_ui.py`).
 - **Active Learning Loop**: `ml-data-selector` isolates low-confidence samples to the labeling queue and triggers retraining.
 - **Observability**: DynamoDB metadata, S3 artifact store, CloudWatch metrics and dashboards.
 
 
-## Architecture (Mermaid)
+## Architecture
 
-```mermaid
-flowchart LR
-  subgraph UI[User Interfaces]
-    ST[Streamlit UI]
-    CLI[API Client curl/python]
-  end
-
-  ST --> |HTTP| LambdaURL[Lambda Function URL / API Gateway]
-  CLI --> |HTTP| LambdaURL
-
-  LambdaURL --> S3[ S3 images, artifacts ]
-  LambdaURL --> DB[ DynamoDB inference metadata ]
-  LambdaURL --> MLflowProxy[ MLflow logging via Lambda / EventBridge ]
-
-  subgraph Selector[Active Learning]
-    MLDS[ml-data-selector Lambda]
-    QueueS3[Labeling S3 Queue]
-  end
-
-  DB --> |low confidence| MLDS
-  S3 --> MLDS
-  MLDS --> QueueS3
-  QueueS3 --> |annotated| Retrain[Retraining Pipeline / CI]
-  Retrain --> |new model| MLflowRegistry[MLflow Model Registry]
-  MLflowRegistry --> |deploy| LambdaURL
-
-  MLflowProxy --> MLflowServer[Self-hosted MLflow ECS/Fargate behind ALB]
-
-  style LambdaURL fill:#f9f,stroke:#333,stroke-width:1px
-```
+![Architecture](<content/screenshot_001.png>)
 
 ASCII fallback:
 
