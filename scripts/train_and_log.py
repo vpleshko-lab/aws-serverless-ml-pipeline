@@ -1,5 +1,4 @@
 import os
-import onnx
 import mlflow
 import mlflow.onnx
 import torch
