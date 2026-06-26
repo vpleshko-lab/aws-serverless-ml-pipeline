@@ -106,8 +106,11 @@ export AWS_SECRET_ACCESS_KEY=...
 export AWS_DEFAULT_REGION=us-east-1
 ```
 
+If you running local API and you want import production model from Mlflow registry:
+```bash
+EXPORT MLFLOW_TRACKING_URI="http://DNS_NAME # EC2 -> Load balancers -> your
+```
 Run the inference API locally (FastAPI + ONNX):
-
 ```bash
 uvicorn app.app_main:app --reload
 ```

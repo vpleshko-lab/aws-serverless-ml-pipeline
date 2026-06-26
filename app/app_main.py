@@ -1,3 +1,4 @@
+from mlflow.tracking import MlflowClient
 import os
 import io
 import time
@@ -36,24 +37,38 @@ DIMENSIONS = [
 
 
 def load_model_from_registry():
-    """Завантажує ONNX модель з віддаленого або локального реєстру Mlflow"""
+    """Завантажує ONNX модель з віддаленого або локального реєстру Mlflow за аліасом Production"""
     tracking_uri = os.environ.get(
         "MLFLOW_TRACKING_URI", "http://localhost:5000")
     mlflow.set_tracking_uri(tracking_uri)
 
     model_name = "Classification-MobileNet"
-    model_stage = "Production"  # тег моделі, яку імпортуєш
+    model_alias = "Production"
 
     logger.info(
         f"Connecting to Mlflow at {tracking_uri} to fetch model '{model_name}'...")
 
-    model_uri = f"models://{model_name}/{model_stage}"
+    try:
+        # 1. Використовуємо сучасний клієнт MLflow для пошуку моделі за аліасом
+        client = MlflowClient()
+        model_version_details = client.get_model_version_by_alias(
+            name=model_name,
+            alias=model_alias
+        )
 
-    local_model_dir = mlflow.artifacts.download_artifacts(
-        artifact_uri=model_uri)
-    onnx_path = os.path.join(local_model_dir, "model.onnx")
+        run_id = model_version_details.run_id
+        logger.info(
+            f"Found Production model in Run ID: {run_id}, Version: {model_version_details.version}")
 
-    return onnx_path
+        # 2. Скачуємо файл model.onnx з папки артефактів рану
+        local_onnx_path = client.download_artifacts(run_id, "model/model.onnx")
+        logger.info(
+            f"Successfully downloaded model.onnx to: {local_onnx_path}")
+        return local_onnx_path
+
+    except Exception as e:
+        # Якщо впало (немає інтернету, впав сервер, немає такої моделі) — кидаємо помилку для фолбеку
+        raise RuntimeError(f"MLflow download failed: {str(e)}")
 
 
 @asynccontextmanager
